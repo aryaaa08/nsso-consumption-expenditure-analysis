@@ -1,183 +1,261 @@
-📊 NSSO HCES 2023–24: Household Welfare & Consumption Inequality in India
+# 📊 NSSO HCES 2023–24: Household Welfare & Consumption Inequality in India
 
-🔍 Overview
-Household consumption expenditure is one of the most reliable indicators of economic well-being in India, where income data is often incomplete or underreported. This project uses unit-level microdata from the NSSO's 2023–24 Household Consumer Expenditure Survey (HCES) to examine five interconnected dimensions of household welfare:
+<div align="center">
 
-How unequal is consumption across the expenditure distribution?
-How large is the rural–urban divide, and is it consistent across income groups?
-Are Indian households calorically adequate, and how does this vary with spending?
-Does the household head's education level predict consumption outcomes?
-Does caste-based social group membership shape access to household assets?
+![R](https://img.shields.io/badge/Language-R%204.2%2B-276DC3?style=flat-square\&logo=r\&logoColor=white)
+![Data](https://img.shields.io/badge/Data-NSSO%20HCES%202023--24-orange?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat-square)
+![Quarto](https://img.shields.io/badge/Report-Quarto-blueviolet?style=flat-square)
 
-The analysis covers over 3.47 crore household observations across all states and union territories of India, combining food expenditure, non-food expenditure, nutritional conversion, and socio-demographic data from multiple NSSO survey levels.
+### 📈 Household Consumption, Nutrition, Education & Social Inequality Analysis using NSSO HCES 2023–24
 
-❓ Research Questions
-#QuestionMethod1How is Monthly Per Capita Consumption Expenditure (MPCE) distributed, and how do food vs. non-food spending patterns differ across deciles?Decile analysis, histogram, boxplots2Is there a statistically significant rural–urban gap in MPCE, and does it persist across the expenditure distribution?Welch two-sample t-test, decile curves3What share of households falls below calorie norms, and how do food-sourcing strategies shift with expenditure?Calorie conversion, poverty thresholds, source decomposition4Does household head's education level significantly predict household consumption (MPCE)?One-way ANOVA, Tukey HSD post-hoc test5Do social groups (ST, SC, OBC, Others) differ in ownership of essential vs. non-essential household assets?Chi-square test of independence
+**Tech Stack:** R • Quarto • dplyr • ggplot2 • Statistical Testing • Data Visualization
 
-🔑 Key Findings
-Q1 — Consumption Inequality
+</div>
 
-Mean MPCE rises from ₹9,427 (bottom decile) to ₹84,412 (top decile) — a ~9x disparity
-MPCE distribution is heavily right-skewed; top-decile mean far exceeds median, indicating extreme upper-tail concentration
-Non-food MPCE grows far faster than food MPCE across deciles — consistent with Engel's Law
-By the top deciles, non-food expenditure dominates total consumption, reflecting discretionary spending
-
-Q2 — Rural–Urban Divide
-
-Mean MPCE: ₹23,186 (Rural) vs. ₹37,431 (Urban) — a monthly gap of ~₹14,250
-Gap is statistically significant (t = −1333, p < 0.001)
-Decile curves are nearly parallel, indicating the gap is a level difference, not a structural divergence
-
-Q3 — Nutritional Adequacy
-
-A significant share of the population falls below both the Indian norm (2400/2100 kcal) and the international threshold (2100 kcal)
-Calorie poverty rates decline sharply with rising MPCE, but persist even in middle deciles
-Poorer households rely more on PDS and home production; richer households shift toward market purchases
-
-Q4 — Education & Consumption
-
-ANOVA: F = 1335, p < 0.001 — education level is strongly associated with MPCE
-Mean MPCE for graduate-led households is ₹21,481 higher than illiterate-led households
-No significant difference between "Literate (no school)" and "Primary" — basic literacy alone provides limited returns
-Large returns emerge from secondary education onward; diploma and graduate levels yield the highest gains
-
-Q5 — Social Group & Asset Ownership
-
-Essential asset ownership is near-universal, but ST and SC households lag even at this baseline
-Non-essential asset ownership shows a sharp social gradient: ST/SC < OBC < Others
-Chi-square results: Essential (χ² = 250.89, p < 0.001), Non-Essential (χ² = 71.41, p < 0.001)
-Caste-based stratification shapes not just wealth, but access to comfort and economic resilience
 ---
 
-## 📁 Repository Structure
+# 🔍 Overview
+
+Household consumption expenditure is one of the most reliable indicators of economic well-being in India, where income data is often incomplete or underreported. This project uses **unit-level microdata** from the **National Sample Survey Office (NSSO) Household Consumer Expenditure Survey (HCES) 2023–24** to examine five interconnected dimensions of household welfare.
+
+The study investigates:
+
+* How unequal consumption is across the expenditure distribution.
+* The magnitude and persistence of the rural–urban consumption gap.
+* Nutritional adequacy and calorie poverty across expenditure groups.
+* The relationship between education and household welfare.
+* Differences in asset ownership across social groups.
+
+The analysis covers **over 3.47 crore household observations** across rural and urban India and integrates food expenditure, non-food expenditure, calorie conversion, education, demographic characteristics, and social group information from multiple NSSO survey levels.
+
+---
+
+# ❓ Research Questions
+
+| # | Question                                                                                                                                    | Method                                                       |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 1 | How is Monthly Per Capita Consumption Expenditure (MPCE) distributed, and how do food vs. non-food spending patterns differ across deciles? | Decile analysis, histograms, boxplots                        |
+| 2 | Is there a statistically significant rural–urban gap in MPCE, and does it persist across the expenditure distribution?                      | Welch Two-Sample t-test, decile analysis                     |
+| 3 | What proportion of households falls below calorie norms, and how do food-sourcing strategies change with expenditure?                       | Calorie conversion, poverty thresholds, source decomposition |
+| 4 | Does the education level of the household head significantly influence household consumption (MPCE)?                                        | One-Way ANOVA, Tukey HSD                                     |
+| 5 | Do social groups differ in ownership of essential and non-essential household assets?                                                       | Chi-Square Test of Independence                              |
+
+---
+
+# 🔑 Key Findings
+
+## Q1 — Consumption Inequality
+
+* Mean MPCE rises from **₹9,427** in the bottom decile to **₹84,412** in the top decile — a nearly **9× disparity**.
+* MPCE distribution is heavily **right-skewed**, with extreme expenditure concentration among top-consuming households.
+* **Non-food expenditure grows substantially faster** than food expenditure across deciles, supporting **Engel's Law**.
+* In higher deciles, non-food spending becomes the dominant component of total household consumption.
+
+---
+
+## Q2 — Rural–Urban Divide
+
+* Mean MPCE equals **₹23,186 for Rural households** and **₹37,431 for Urban households**.
+* The average monthly per-capita gap is approximately **₹14,250**.
+* Welch Two-Sample t-test confirms that the difference is **statistically significant**.
+* Decile curves remain largely parallel, suggesting a persistent level difference rather than structural divergence.
+
+---
+
+## Q3 — Nutritional Adequacy
+
+* A substantial share of households falls below both the **Indian calorie norms (2400/2100 kcal)** and the **international threshold (2100 kcal)**.
+* Calorie poverty declines steadily as MPCE increases.
+* Lower-income households depend more heavily on **Public Distribution System (PDS)** support and **home-produced food**.
+* Higher-income households increasingly rely on **market purchases** for calorie consumption.
+
+---
+
+## Q4 — Education & Consumption
+
+* Education level is strongly associated with household consumption expenditure.
+* ANOVA results indicate statistically significant differences in MPCE across education categories.
+* Graduate-led households exhibit substantially higher MPCE than households headed by individuals with low educational attainment.
+* Returns to education become increasingly pronounced from secondary education onward.
+
+---
+
+## Q5 — Social Group & Asset Ownership
+
+* Essential asset ownership is widespread but remains lower among historically disadvantaged groups.
+* Ownership of non-essential assets exhibits a strong social gradient.
+* Significant differences in ownership patterns are observed across social groups.
+* Social stratification continues to influence access to household resources and economic resilience.
+
+---
+
+# 📁 Repository Structure
 
 ```text
 nsso-consumption-expenditure-analysis/
 │
 ├── README.md
-│   └── Project documentation, methodology, findings, and usage guide
 │
 ├── quarto/
 │   └── NSSO_Analysis.qmd
-│       └── Complete Quarto workflow containing data preparation,
-│           statistical analysis, visualisations, and report generation
 │
 ├── report/
 │   └── NSSO_R_EPORT_FINAL.pdf
-│       └── Final project report with methodology, code,
-│           outputs, statistical tests, and interpretation
 │
 └── outputs/
     ├── mpce_dashboard.png
     ├── rural_urban_gap.png
     ├── calorie_poverty.png
     └── calorie_sources.png
-        └── Key visualisations generated from the analysis
 ```
 
+---
 
-## Dataset
+# 🗃️ Dataset
 
-**Source:** NSSO Household Consumption Expenditure Survey (HCES) 2023–24
+### Source
 
-**Unit of Analysis:** Household
+**National Sample Survey Office (NSSO)**
+**Household Consumer Expenditure Survey (HCES) 2023–24**
+
+### Unit of Analysis
+
+Household
+
+### Data Components
 
 The project combines multiple NSSO survey levels containing:
 
-- Household demographics
-- Consumption expenditure
-- Food quantities
-- Education information
-- Social group characteristics
-- Asset ownership data
-- Food acquisition sources
+* Household demographics
+* Consumption expenditure
+* Food quantities
+* Education information
+* Social group characteristics
+* Asset ownership data
+* Food acquisition sources
 
 ---
 
-## Methodology
+# ⚙️ Methodology
 
-### Data Preparation
+## Data Preparation
 
-- Constructed unique household identifiers (HHID)
-- Merged multiple NSSO survey modules
-- Standardized 7-day and 365-day recall periods
-- Aggregated household-level expenditure measures
-- Computed Monthly Per Capita Consumption Expenditure (MPCE)
+* Constructed unique household identifiers (HHID)
+* Merged multiple NSSO survey modules
+* Standardized 7-day and 365-day recall periods
+* Aggregated household-level expenditure measures
+* Computed Monthly Per Capita Consumption Expenditure (MPCE)
 
-### Statistical Analysis
+## Statistical Analysis
 
-#### Consumption Analysis
-- MPCE Decile Distribution
-- Mean and Median Expenditure Analysis
-- Food vs Non-Food Expenditure Decomposition
+### 📊 Consumption Analysis
 
-#### Rural–Urban Comparison
-- Welch Two-Sample t-Test
-- Decile-wise expenditure comparisons
-- Confidence interval estimation
+* MPCE Decile Distribution
+* Mean and Median Expenditure Analysis
+* Food vs Non-Food Expenditure Decomposition
 
-#### Nutritional Analysis
-- Calorie conversion using standard food calorie factors
-- Daily per-capita calorie estimation
-- Calorie poverty assessment
-- Nutritional adequacy evaluation
+### 🌆 Rural–Urban Comparison
 
-#### Education Analysis
-- One-Way ANOVA
-- Tukey HSD Post-Hoc Testing
+* Welch Two-Sample t-Test
+* Decile-wise Expenditure Comparison
+* Confidence Interval Estimation
 
-#### Asset Ownership Analysis
-- Cross-tabulations
-- Social group comparisons
-- Statistical significance testing
+### 🍽️ Nutritional Analysis
 
----
+* Calorie Conversion using Standard Food Factors
+* Daily Per-Capita Calorie Estimation
+* Calorie Poverty Assessment
+* Nutritional Adequacy Evaluation
 
-## Tools & Technologies
+### 🎓 Education Analysis
 
-- R
-- dplyr
-- tidyr
-- ggplot2
-- patchwork
-- haven
-- gridExtra
+* One-Way ANOVA
+* Tukey HSD Post-Hoc Testing
+
+### 🏠 Asset Ownership Analysis
+
+* Cross-Tabulations
+* Social Group Comparisons
+* Statistical Significance Testing
 
 ---
 
-## Visual Outputs
+# 🛠️ Tools & Technologies
+
+* R
+* Quarto
+* dplyr
+* tidyr
+* ggplot2
+* haven
+* patchwork
+* gridExtra
+
+---
+
+# 📈 Visual Outputs
 
 The project includes:
 
-- MPCE Distribution Dashboard
-- Rural–Urban Consumption Gap Analysis
-- Calorie Poverty Assessment
-- Calorie Source Composition Analysis
-- Education vs Consumption Analysis
-- Asset Ownership Comparisons
+* MPCE Distribution Dashboard
+* Rural–Urban Consumption Gap Analysis
+* Calorie Poverty Assessment
+* Calorie Source Composition Analysis
+* Education and Consumption Analysis
+* Asset Ownership Comparison
 
 ---
 
-## Reproducibility
+# 📂 Data Availability
+
+The raw NSSO HCES 2023–24 microdata is **not included** in this repository due to access restrictions and file size limitations.
+
+Researchers interested in reproducing the analysis should obtain the data independently from the **Ministry of Statistics and Programme Implementation (MoSPI)** and update the local file paths within the Quarto workflow.
+
+---
+
+# 🔄 Reproducibility
 
 To reproduce the analysis:
 
-1. Obtain NSSO HCES 2023–24 unit-level data.
-2. Install required R packages.
-3. Run the analysis scripts in the `code/` directory.
-4. Generate outputs and visualizations.
+1. Obtain NSSO HCES 2023–24 unit-level microdata.
+2. Install the required R packages.
+3. Open `quarto/NSSO_Analysis.qmd`.
+4. Update local data paths.
+5. Render the Quarto document to generate all outputs and analyses.
 
 ---
 
-## Author
+# 📄 Report
+
+The complete analytical report is available in:
+
+```text
+report/NSSO_R_EPORT_FINAL.pdf
+```
+
+The report contains:
+
+* Data preparation workflow
+* Statistical analysis
+* Hypothesis testing
+* Visualizations
+* Interpretation of results
+* Policy-oriented discussion
+
+---
+
+# 👩‍💻 Author
 
 **Anjali Arya**
 
-BS in Analytics and Sustainability Studies
+**B.S. in Analytics and Sustainability Studies**
 
 ---
 
-📜 License
-This project is licensed under the MIT License. The underlying NSSO data is the property of the Government of India / MoSPI and is subject to their own terms of use.
+<div align="center">
 
-The NSSO unit-level data used in this project may be subject to access and usage restrictions. This repository is intended for educational, research, and portfolio purposes.
+### ⭐ If you found this project interesting, consider giving the repository a star.
+
+</div>
