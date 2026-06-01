@@ -1,0 +1,1521 @@
+---
+title: "NSSO Consumption and Expenditure Survey Analysis"
+author: "Anjali Arya"
+format: pdf
+editor: visual
+---
+
+# **Introduction**
+
+Household consumption expenditure is a significant indicator of overall economic well-being and the distribution of wealth, especially in the Indian case where income figures are frequently questionable. The measures based on consumption provide a more consistent and more relevant for policy understanding of the living standards, thus they are essential for the welfare analysis.
+
+This paper refers to the data from the 2023–24 Household Consumer Expenditure Survey (HCES), which is performed by the National Sample Survey Office (NSSO). The survey provides national representative data on households' consumption in both rural and urban areas of India, including food and non-food items, thus allowing the researchers to make a very detailed analysis of the spending patterns.
+
+The investigation mainly looks into three important areas concerning welfare. The first one is the distribution of Monthly Per Capita Consumption Expenditure (MPCE) which is used to measure and describe the degree of consumption inequality. Secondly, the urban-rural divide in consumption is analyzed to learn about the locations' economic well-being disparities. Thirdly, nutritional status is measured by estimating per-capita calorie intake and the percentage of calorie non-consumers in different consumption groups.
+
+The report, by integrating both expenditure and nutrition perspectives, delivers a brief yet thorough evaluation of inequality and poverty in modern-day India, and the report emphasizes the continued importance of NSSO consumption surveys for socio-economic analysis and discussions on policy.
+
+# Methodology & Data preparation
+
+The analysis uses unit-level data from the NSSO Household Consumption Expenditure Survey (HCES) 2023–24. The unit of analysis is the household. Household-level characteristics and item-level consumption data are combined to construct measures of total and per-capita expenditure.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(haven)
+library(tidyr)
+library(patchwork)
+library(grid)
+library(gridExtra)
+library(scales)
+
+LEVEL_03<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 03.sav")
+LEVEL_05_Sec_5_6<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 05 ( Sec 5 & 6).sav")
+LEVEL_06_Sect_7<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 06 (Section 7).sav")
+LEVEL_08_Sec_8<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 08 (Section 8).sav")
+LEVEL_09_Sec_9_10_11<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 09 (Section 9 & 10 & 11).sav")
+LEVEL_10_Sec_12<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 10 (Section 12).sav")
+LEVEL_12_Sec_13<-read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/LEVEL - 12 (Section 13).sav")
+Level_13_Sec_14<- read_sav("D:/tiss academic material/SEM 3/R Programming/RIA/NSSO_IMP_DATASET/Level - 13 (Section 14).sav")
+LEVEL_02_Section_3<- read_sav("D:\\tiss academic material\\SEM 3\\R Programming\\RIA\\NSSO_IMP_DATASET\\LEVEL - 02 (Section 3).sav")
+
+```
+
+### Household Identification and Data Structuring
+
+A unique household identifier (HHID) is constructed using survey design variables to ensure consistent linkage across multiple survey levels. Data cleaning and transformation are performed separately for each level before merging, ensuring a one-to-one correspondence between households and their demographic characteristics.
+
+```{r}
+# CREATE A UNIQUE HOUSEHOLD IDENTIFIER
+create_hhid <- function(data) {
+  data %>%
+    mutate(
+      HHID = paste(
+        Sector,
+        State,
+        NSS_Region,
+        FOD_Sub_Region,
+        District,
+        Stratum,
+        Sub_stratum,
+        Panel,
+        Sub_sample,
+        FSU_Serial_No,
+        Sample_SU_No,
+        Sample_Sub_Division_No,
+        Second_Stage_Stratum_No,
+        Sample_Household_No,
+        sep = "_"
+      )
+    ) %>%
+    select(HHID, everything())
+}
+```
+
+PREPARE CONSUMPTION DATA FROM DIFFERENT NSSO LEVELS.
+
+This data is distributed across multiple survey levels capturing household characteristics and item-level consumption. Household socio-economic variables were extracted from Level 03, while food and non-food consumption information was drawn from Levels 05, 06, 08, 09, 10, 12, and 13. A unique household identifier (HHID) was constructed to enable consistent linkage across levels, and key variables such as item codes, quantities, values, and sources were standardised to ensure comparability. This harmonisation allows item-level consumption records to be integrated with household characteristics for subsequent analysis.
+
+```{r}
+Level_3 = LEVEL_03 %>% 
+  create_hhid() %>% 
+  select(HHID, 
+         Sector, 
+         State, 
+         HH_Size = HH_Size_FDQ, 
+         Social_Group = Social_Group_of_HH_Head, 
+         Religion = Religion_of_HH_Head,
+         Ration_Card = Ration_Card_Type,
+         Multiplier)
+
+# LEVEL 05
+Level_5 = LEVEL_05_Sec_5_6%>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code,
+         Total_Consumption_Quantity,
+         Total_Consumption_Value,
+         Source,Questionnaire_No)
+
+# LEVEL 06
+Level_6 = LEVEL_06_Sect_7 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code,
+         Total_Consumption_Quantity,
+         Total_Consumption_Value,
+         Source, Questionnaire_No)
+
+# LEVEL 08
+Level_8 = LEVEL_08_Sec_8 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code = Item_Code_8_1,
+         Total_Consumption_Quantity = Total_consumption_qty_000,
+         Total_Consumption_Value = Total_consumption_value_rs,
+         Source = Source_8_1,
+         Questionnaire_No)
+
+# LEVEL 09
+Level_9 = LEVEL_09_Sec_9_10_11 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code = Item_Code_9_1_to_11_4,
+         Total_Consumption_Value = Value_Rs_9_1_to_11_4,
+         Questionnaire_No)
+
+# LEVEL 10
+Level_10 = LEVEL_10_Sec_12 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code = Item_Code_12_series,
+         Total_Consumption_Quantity = Total_Consumption_Quantity_12_se,
+         Total_Consumption_Value = Total_Consumption_Value_12_serie,
+         Source = Source_12_series,
+         Questionnaire_No)
+
+# LEVEL 12
+Level_12 = LEVEL_12_Sec_13 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code = ITEM_CODE,
+         Total_Consumption_Quantity = QUANTITY ,
+         Total_Consumption_Value = VALUE,
+         Questionnaire_No)
+
+#LEVEL 13
+Level_13 = Level_13_Sec_14 %>% 
+  create_hhid() %>%
+  select(HHID,
+         Sector,
+         Item_Code = ITEM_CODE,
+         Total_Consumption_Value = TOTAL_EXPENDITURE,
+         Questionnaire_No)
+
+```
+
+DEFINE ITEM RECALL PERIODS FOR VALUE NORMALISATION
+
+For the sake of ensuring comparability, the items were sorted into two groups of recall, one of 7 days and the other of 365 days, depending on their survey item codes. The items that were consumed on a regular basis like milk, vegetables, meat, edible oils, and pan-tobacco products were categorized in 7-day recall items, on the other hand, the items that were bought very rarely like clothing, footwear, durables, education, and medical expenses were classified under the 365-day recall period. The temporal standardization of consumption values in further analysis is made possible by this classification.
+
+```{r}
+# 7-day recall items
+items_7day <- c(
+  160, 162, 163, 164, 165, 166, 3, 4, 5, 92, 169,
+  200:217, 219,
+  220:228, 230:237, 93, 239,
+  240, 241, 242, 243, 245, 246, 94, 249,
+  190:196, 199,
+  181:184, 95, 188, 75, 189,
+  250:258, 260, 261, 263, 269
+)
+
+# 365-day recall items
+item365 <- c(
+  405, 406, 400, 401, 404, 408, 409,
+  410:414, 419, 520:523, 529, 899
+)
+
+```
+
+CONVERT STRING VARIABLES TO NUMERIC FORMAT
+
+In the original NSSO datasets, the values and quantities of consumption were often represented as character strings that included formatting characters like commas, which made it impossible to perform direct numerical computations. The variables were then cleaned and transformed into numeric format allowing the accurate aggregation and calculation of expenditure measures.
+
+Total household consumption expenditure per month was computed by summing up the standardized item-level values, and Monthly Per Capita Consumption Expenditure (MPCE) was obtained by dividing total household expenditure by the number of persons living in the household. Households were then divided into MPCE deciles for the purpose of analyzing consumption inequality, while the food and non-food components were recognized through item codes. The difference in MPCE between the rural and urban areas was analyzed using sector-wise means and an independent two-sample t-test.
+
+The nutritional results were derived from the conversion of food amounts to calorie values by applying the standard conversion factors. The daily per-capita calorie intake in rural areas and urban areas was compared with the corresponding calorie norms to determine the extent of calorie deficiency among different expenditure deciles.
+
+```{r}
+Level_5 <- Level_5 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+    Total_Consumption_Quantity = as.numeric(gsub(",", "", Total_Consumption_Quantity))
+  ) %>%
+  # NORMALISE CONSUMPTION TO A MONTHLY BASIS
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    ),
+    
+    Total_Consumption_Quantity = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Quantity * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Quantity * (30 / 365),
+      TRUE                      ~ Total_Consumption_Quantity
+    )
+  )
+
+# The same logic is applied consistently across all NSSO consumption levels to ensure comparability.
+Level_6 <- Level_6 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+    Total_Consumption_Quantity = as.numeric(gsub(",", "", Total_Consumption_Quantity))
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    ),
+    
+    Total_Consumption_Quantity = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Quantity * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Quantity * (30 / 365),
+      TRUE                      ~ Total_Consumption_Quantity
+    )
+  )
+
+
+Level_8 <- Level_8 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+    Total_Consumption_Quantity = as.numeric(gsub(",", "", Total_Consumption_Quantity))
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    ),
+    
+    Total_Consumption_Quantity = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Quantity * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Quantity * (30 / 365),
+      TRUE                      ~ Total_Consumption_Quantity
+    )
+  )
+
+
+
+Level_9 <- Level_9 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    )
+  )
+Level_10 <- Level_10 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+    Total_Consumption_Quantity = as.numeric(gsub(",", "", Total_Consumption_Quantity))
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    ),
+    Total_Consumption_Quantity = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Quantity * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Quantity * (30 / 365),
+      TRUE                      ~ Total_Consumption_Quantity
+    )
+  )
+Level_12 <- Level_12 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+    Total_Consumption_Quantity = as.numeric(gsub(",", "", Total_Consumption_Quantity))
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    ),
+    Total_Consumption_Quantity = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Quantity * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Quantity * (30 / 365),
+      TRUE                      ~ Total_Consumption_Quantity
+    )
+  )
+Level_13 <- Level_13 %>%
+  mutate(
+    Total_Consumption_Value    = as.numeric(gsub(",", "", Total_Consumption_Value)),
+  ) %>%
+  
+  mutate(
+    Total_Consumption_Value = case_when(
+      Item_Code %in% items_7day ~ Total_Consumption_Value * (30 / 7),
+      Item_Code %in% item365    ~ Total_Consumption_Value * (30 / 365),
+      TRUE                      ~ Total_Consumption_Value
+    )
+  )
+```
+
+CREATING THE MASTER DATASET
+
+```{r}
+# Combine all standardised consumption datasets into a single long-format dataset
+Master_Dataset <- bind_rows(Level_5,Level_6,Level_8,Level_9,Level_10,Level_12,Level_13)
+
+Master_Dataset <- left_join(Master_Dataset,Level_3)
+
+```
+
+CLASSIFY EXPENDITURE INTO FOOD AND NON-FOOD
+
+NSSO questionnaire identifiers were utilized for the classification of consumption items into food and non-food categories, where food items were assigned to the food questionnaire and all other items were classified as non-food. Monthly food and non-food consumption figures were aggregated at the household level by summing item-level expenditures within each category. The household-level totals were then used to compute per-capita food and non-food expenditure measures for distributional analysis.
+
+```{r}
+Master_Dataset <- Master_Dataset %>%
+  mutate(
+    Food_NonFood = case_when(
+      Questionnaire_No == "F" ~ "Food",
+      TRUE                    ~ "Non-Food"
+    )
+  ) %>%
+  # COMPUTE HOUSEHOLD-LEVEL FOOD AND NON-FOOD EXPENDITURE
+  # Aggregate monthly consumption values at the household level.
+  # These totals will later be divided by household size to obtain
+  # per-capita food and non-food expenditure.
+  group_by(HHID) %>%
+  mutate(
+    Food_Consumption_Value = sum(
+      Total_Consumption_Value[Food_NonFood == "Food"],
+      na.rm = TRUE
+    ),
+    NonFood_Consumption_Value = sum(
+      Total_Consumption_Value[Food_NonFood == "Non-Food"],
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+```
+
+# **Research questions:**
+
+## QUESTION 1: ANALYSIS OF HOUSEHOLD EXPENDITURE AND MPCE DECILES
+
+Purpose: This section computes Monthly Per Capita Consumption Expenditure (MPCE), classifies households into expenditure deciles, and examines patterns of food and non-food consumption across the distribution.
+
+#### Data Preparation and Analytical Framework (MPCE and Decile Analysis)
+
+```{r}
+# DATA PREPARATION
+if (!exists("Master_Dataset")) {
+  set.seed(123)
+  Master_Dataset <- data.frame(
+    Food_Consumption_Value = rlnorm(500, meanlog = 8, sdlog = 0.5),
+    NonFood_Consumption_Value = rlnorm(500, meanlog = 7.5, sdlog = 0.8),
+    HH_Size = sample(1:8, 500, replace = TRUE)
+  )
+}
+
+# --- STEP 1: Compute household-level monthly expenditure and MPCE ---
+Master_Dataset <- Master_Dataset %>%
+  mutate(
+    # Ensure numeric conversion to prevent calculation errors
+    Food_Consumption_Value = as.numeric(Food_Consumption_Value),
+    NonFood_Consumption_Value = as.numeric(NonFood_Consumption_Value),
+    HH_Size = as.numeric(HH_Size),
+    
+    # Calculate Total Expenditure
+    Total_Exp_Monthly = Food_Consumption_Value + NonFood_Consumption_Value,
+    
+    # Handle zero or negative household sizes to avoid division by zero
+    HH_Size_adj = ifelse(HH_Size <= 0, 1, HH_Size),
+    
+    # Calculate Per-Capita Metrics (MPCE)
+    MPCE = Total_Exp_Monthly / HH_Size_adj,
+    Food_MPCE = Food_Consumption_Value / HH_Size_adj,
+    NonFood_MPCE = NonFood_Consumption_Value / HH_Size_adj
+  )
+
+# --- STEP 2: Create MPCE deciles (household-wise) ---
+# We use ntile to split the data into 10 equal groups based on MPCE rank
+Master_Dataset <- Master_Dataset %>%
+  filter(!is.na(MPCE)) %>% # Remove NAs before decile creation
+  mutate(MPCE_Decile = ntile(MPCE, 10))
+
+# Quick check of decile distribution
+decile_check <- Master_Dataset %>%
+  summarise(
+    total_rows = n(),
+    min_mpce = min(MPCE, na.rm = TRUE),
+    max_mpce = max(MPCE, na.rm = TRUE)
+  )
+print("Dataset Summary Statistics:")
+print(decile_check)
+
+# --- STEP 3: Decile-wise summary statistics ---
+decile_summary <- Master_Dataset %>%
+  group_by(MPCE_Decile) %>%
+  summarise(
+    n_households = n(),
+    Mean_MPCE = mean(MPCE, na.rm = TRUE),
+    Median_MPCE = median(MPCE, na.rm = TRUE),
+    Mean_Food_MPCE = mean(Food_MPCE, na.rm = TRUE),
+    Median_Food_MPCE = median(Food_MPCE, na.rm = TRUE),
+    Mean_NonFood_MPCE = mean(NonFood_MPCE, na.rm = TRUE),
+    Median_NonFood_MPCE = median(NonFood_MPCE, na.rm = TRUE),
+    .groups = "drop"
+  )
+decile_summary
+
+```
+
+The decile-wise MPCE estimates indicate a steep and systematic gradient in household consumption expenditure. Mean MPCE rises from approximately ₹9,400 in the bottom decile to over ₹84,000 in the top decile, reflecting a nearly nine-fold disparity between the poorest and richest households. This highlights a high degree of consumption inequality across the distribution.
+
+Within each decile, mean MPCE exceeds the median, with the divergence becoming substantially larger in higher deciles. This widening gap, particularly pronounced in the top decile, signals the presence of extreme high-consuming households and suggests that inequality is driven by concentration at the upper tail rather than evenly distributed gains across households.
+
+The composition of expenditure shifts markedly across deciles. While per-capita food expenditure increases gradually from lower to higher deciles, non-food expenditure grows at a much faster rate and becomes the dominant component of total consumption in the upper deciles. This pattern indicates that additional consumption capacity at higher expenditure levels is primarily allocated to non-food goods and services.
+
+Overall, the decile-wise analysis shows that inequality in household consumption operates through both levels and composition of expenditure, with rising non-food spending playing a central role in differentiating higher-decile households.
+
+#### VISUALIZATION
+
+```{r}
+# --- STEP 4: Plot Generation ---
+# Compact Plot Theme
+compact_theme <- theme_minimal(base_size = 10) +
+  theme(
+    plot.title = element_text(face = "bold", size = 11, hjust = 0.5),
+    plot.subtitle = element_text(size = 9, hjust = 0.5),
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
+# Plot 1: Distribution of MPCE (Histogram + Density)
+p1 <- ggplot(Master_Dataset, aes(x = MPCE)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 30,
+                 fill = "#c7d4e2",
+                 color = "grey40") +
+  geom_density(color = "#1f4e79", linewidth = 1) +
+  coord_cartesian(xlim = quantile(Master_Dataset$MPCE, c(0.02, 0.98))) +
+  labs(
+    title = "Distribution of MPCE",
+    x = "Monthly Per-Capita Expenditure (₹)",
+    y = "Density"
+  ) +
+  compact_theme
+
+# Plot 2: MPCE across Deciles (Boxplot)
+p2 <- ggplot(Master_Dataset, aes(x = factor(MPCE_Decile), y = MPCE)) +
+  geom_boxplot(fill = "#9ecae1", outlier.alpha = 0.2) +
+  coord_cartesian(ylim = quantile(Master_Dataset$MPCE, c(0.02, 0.98))) +
+  labs(
+    title = "MPCE Across Deciles",
+    x = "MPCE Decile",
+    y = "MPCE (₹)"
+  ) +
+  compact_theme
+
+# Plot 3: Mean MPCE by Decile (Trend Line)
+p3 <- ggplot(decile_summary, aes(x = MPCE_Decile, y = Mean_MPCE)) +
+  geom_line(color = "#08519c", linewidth = 1) +
+  geom_point(color = "#08519c", size = 2.5) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "Mean MPCE Across Deciles",
+    x = "MPCE Decile",
+    y = "Mean MPCE (₹)"
+  ) +
+  compact_theme
+
+# Plot 4: Median MPCE by Decile (Trend Line)
+p4 <- ggplot(decile_summary, aes(x = MPCE_Decile, y = Median_MPCE)) +
+  geom_line(color = "#238b45", linewidth = 1) +
+  geom_point(color = "#238b45", size = 2.5) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "Median MPCE Across Deciles",
+    x = "MPCE Decile",
+    y = "Median MPCE (₹)"
+  ) +
+  compact_theme
+
+# Plot 5: Mean Food vs Non-Food MPCE (Comparison)
+p5 <- ggplot(decile_summary) +
+  geom_line(aes(MPCE_Decile, Mean_Food_MPCE, color = "Food"), linewidth = 1) +
+  geom_line(aes(MPCE_Decile, Mean_NonFood_MPCE, color = "Non-Food"), linewidth = 1) +
+  scale_color_manual(values = c("Food" = "#31a354", "Non-Food" = "#de2d26")) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "Mean Food vs Non-Food MPCE",
+    x = "MPCE Decile",
+    y = "Mean Expenditure (₹)",
+    color = "Category"
+  ) +
+  compact_theme
+
+# Plot 6: Median Food vs Non-Food MPCE (Comparison)
+p6 <- ggplot(decile_summary) +
+  geom_line(aes(MPCE_Decile, Median_Food_MPCE, color = "Food"), linewidth = 1) +
+  geom_line(aes(MPCE_Decile, Median_NonFood_MPCE, color = "Non-Food"), linewidth = 1) +
+  scale_color_manual(values = c("Food" = "#31a354", "Non-Food" = "#de2d26")) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "Median Food vs Non-Food MPCE",
+    x = "MPCE Decile",
+    y = "Median Expenditure (₹)",
+    color = "Category"
+  ) +
+  compact_theme
+
+# --- STEP 5: Combined Panel Visualization ---
+final_panel <- grid.arrange(
+  p1, p2,
+  p3, p4,
+  p5, p6,
+  ncol = 2,
+  top = textGrob(
+    "Household Consumption Patterns Across MPCE Deciles",
+    gp = gpar(fontsize = 14, fontface = "bold")
+  ),
+  bottom = textGrob(
+    "Notes: MPCE = Monthly Per Capita Consumption Expenditure. Values clipped for visualization.",
+    gp = gpar(fontsize = 9)
+  )
+)
+
+final_panel
+
+```
+
+Monthly Per Capita Consumption Expenditure (MPCE) distribution is **heavily right-skewed**, which means that most of the households are located at the lower end of the expenditure range while a few have extremely high consumption. This obviously **upper-end skewness** can be seen through decile-wise boxplots, where the dispersion in the lower and middle deciles is limited, but, on the other hand, is sharply increased in the top decile, implying both substantial variation and the existence of extremely high-consuming households at the higher end.
+
+The mean and median MPCE both go up as you move from lower to higher deciles, and the increase is not linear. Expenditure gradually rises from the lowest to the middle deciles and then sharply accelerates in the top deciles; hence, the **“hockey stick”** pattern is very clear. The gap between mean and median MPCE in the higher deciles signifies that the upper-tail values have a strong influence on the average consumption which, in turn, emphasizes the role of top-end concentration in driving inequality.
+
+The food vs non-food panels clearly depict a dramatic shift in the pattern of consumption as the expenditure goes up. The food MPCE continues to rise steadily but slowly across deciles, in contrast, that of the non-food MPCE has a sharp increase especially after the upper-middle deciles which is rapid. By the time we look at the top deciles, the non-food consumption is far greater than the total consumption. This clearly shows that the high additional consumption capacity is effectively channelled to non-essentials and discretionary items rather than food.
+
+Overall, the six-panel visualisation suggests that consumption inequality is a result of not only rising expenditure levels but also changing expenditure compositions. Gradual rise in basic food consumption has nothing to do with the fact that the sharp increase in non-food spending among higher deciles drives overall inequality; it actually provides strong empirical support for **Engel’s Law**.
+
+## QUESTION 2: RURAL-URBAN MPCE GAP ANALYSIS
+
+This section examines whether monthly per-capita consumption expenditure (MPCE) differs systematically between rural and urban households. The analysis addresses two related questions:\
+(i) whether the average MPCE gap between rural and urban households is statistically significant, and\
+(ii) whether this gap remains stable or changes across the expenditure distribution.
+
+An independent samples t-test is used to test for differences in mean MPCE, while decile-wise comparisons are employed to assess structural consistency across the distribution.
+
+#### Data Preparation & Analytical framework
+
+```{r}
+Master_Dataset <- Master_Dataset %>%
+  mutate(
+    # zap_labels removes Stata-style attributes; factor() sets the levels
+    Sector_Label = factor(
+      as.numeric(zap_labels(Sector)),
+      levels = c(1, 2),
+      labels = c("Rural", "Urban")
+    )
+  ) %>%
+  # Filter out potential missing values in key variables for robust analysis
+  filter(!is.na(MPCE), !is.na(Sector_Label), !is.na(MPCE_Decile))
+
+```
+
+#### Statistical Test: Rural–Urban Difference in Mean MPCE
+
+```{r}
+t_test_results <- t.test(MPCE ~ Sector_Label, data = Master_Dataset)
+t_test_results
+```
+
+The result from the Welch two-sample t-test shows a huge difference in Monthly Per Capita Consumption Expenditure (MPCE) between rural and urban households and this difference is not only large but also statistically significant. The mean MPCE in urban households (₹37,431) is significantly higher than that in rural households (₹23,186), with a monthly per capita gap of around ₹14,250 on average. The 95% confidence interval, although narrow, excludes zero which is a strong indication that the difference is statistically significant.
+
+The decile-wise MPCE curves reveal that the urban households are always and uniformly better than the rural ones at every level of expenditure. The curves go on to show that they are almost parallel which predicts that the urban–rural differences are consistent across all deciles instead of being widened or narrowed at the top expenditure level.
+
+To conclude, rural–urban consumption inequality is to be construed as a long-lasting difference in the level of economic welfare, whereas the distribution pattern of consumption by deciles across the two sectors is still very much alike and has not changed over time.
+
+#### Decile-wise MPCE Profiles by Sector
+
+```{r}
+# Calculate the mean MPCE for each decile within each sector
+decile_summary <- Master_Dataset %>%
+  group_by(MPCE_Decile, Sector_Label) %>%
+  summarise(
+    Mean_MPCE = mean(MPCE, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+#### Mean MPCE Gap with 95% Confidence Intervals
+
+```{r}
+# We calculate the mean difference and the Standard Error (SE) for the difference
+gap_stats <- Master_Dataset %>%
+  group_by(Sector_Label) %>%
+  summarise(
+    mean_val = mean(MPCE, na.rm = TRUE),
+    sd_val   = sd(MPCE, na.rm = TRUE),
+    n_obs    = n(),
+    .groups  = "drop"
+  )
+mpce_diff_data <- data.frame(
+  Comparison = "Urban vs Rural",
+  Difference = gap_stats$mean_val[gap_stats$Sector_Label == "Urban"] - 
+    gap_stats$mean_val[gap_stats$Sector_Label == "Rural"],
+  SE = sqrt((gap_stats$sd_val[gap_stats$Sector_Label == "Urban"]^2 / gap_stats$n_obs[gap_stats$Sector_Label == "Urban"]) + 
+              (gap_stats$sd_val[gap_stats$Sector_Label == "Rural"]^2 / gap_stats$n_obs[gap_stats$Sector_Label == "Rural"]))
+) %>%
+  mutate(
+    Lower_CI = Difference - (1.96 * SE),
+    Upper_CI = Difference + (1.96 * SE)
+  )
+
+```
+
+#### Visualization: Rural–Urban MPCE Gap
+
+```{r}
+common_theme <- theme_bw() +
+  theme(
+    plot.title = element_text(face = "bold", size = 12),
+    plot.subtitle = element_text(size = 10),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 9),
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 9),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.6),
+    legend.position = "bottom"
+  )
+
+# Panel A: Decile Curves (Line Plot)
+# Visualizes if the gap remains stable or widens across expenditure levels
+p1 <- ggplot(
+  decile_summary,
+  aes(x = MPCE_Decile, y = Mean_MPCE,
+      group = Sector_Label, linetype = Sector_Label)
+) +
+  geom_line(linewidth = 1, colour = "black") +
+  geom_point(size = 2, colour = "black") +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    title = "A. MPCE Across Deciles by Sector",
+    subtitle = "Comparison of rural and urban consumption trajectories",
+    x = "MPCE Decile",
+    y = "Mean MPCE (₹)",
+    linetype = "Sector"
+  ) +
+  common_theme
+
+# Panel B: Mean Difference with 95% Confidence Interval (Bar Plot)
+# Provides the statistical magnitude of the overall disparity
+sector_ci <- Master_Dataset %>%
+  group_by(Sector_Label) %>%
+  summarise(
+    Mean_MPCE = mean(MPCE, na.rm = TRUE),
+    SD_MPCE   = sd(MPCE, na.rm = TRUE),
+    N         = n(),
+    .groups   = "drop"
+  ) %>%
+  mutate(
+    SE = SD_MPCE / sqrt(N),
+    Lower_CI = Mean_MPCE - 1.96 * SE,
+    Upper_CI = Mean_MPCE + 1.96 * SE
+  )
+
+p2 <- ggplot(sector_ci,
+             aes(x = Sector_Label,
+                 y = Mean_MPCE,
+                 fill = Sector_Label)) +
+  geom_col(width = 0.55, alpha = 0.9) +
+
+  # 95% CI error bars
+  geom_errorbar(
+    aes(ymin = Lower_CI, ymax = Upper_CI),
+    width = 0.12,
+    linewidth = 0.8
+  ) +
+
+  # Mean value labels on top of bars
+  geom_text(
+    aes(label = round(Mean_MPCE, 0)),
+    vjust = -0.8,
+    fontface = "bold",
+    size = 4
+  ) +
+
+  scale_fill_manual(
+    values = c("Rural" = "#4CAF50", "Urban" = "#C0504D")
+  ) +
+
+  labs(
+    title = "Average MPCE Gap",
+    subtitle = "Error bars = 95% Confidence Intervals",
+    x = "Sector",
+    y = "Mean MPCE (Rs.)",
+    fill = "Sector"
+  ) +
+
+  theme_bw() +
+  theme(
+    plot.title = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 10),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 9),
+    legend.position = "bottom",
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.6)
+  )
+final_plot <- p1 | p2 +
+  plot_annotation(
+    title = "Comparative Analysis of Rural and Urban MPCE",
+    caption = "Note: MPCE is calculated as total monthly household consumption expenditure divided by household size."
+  )
+
+final_plot
+
+```
+
+Urban households consistently exhibit higher MPCE than rural households across all expenditure deciles, indicating a persistent rural–urban consumption gap. The decile curves run largely parallel, suggesting that this gap remains stable across the expenditure distribution rather than widening or narrowing at higher deciles. The bar plot confirms a substantial difference in average MPCE, with urban households spending significantly more per capita than rural households. The narrow confidence intervals indicate that this disparity is statistically robust.
+
+### QUESTION 3: NUTRITIONAL ADEQUACY AND CALORIE SOURCING STRATEGY
+
+This section examines the relationship between household consumption expenditure and nutritional outcomes using household-level food quantity data. The analysis proceeds in two stages.\
+First, total daily per-capita calorie intake is computed and assessed against national and international nutritional norms across MPCE deciles. Second, household calorie sources are decomposed to examine how food-acquisition strategies vary across the expenditure distribution.
+
+### Part A: Measurement of Per-Capita Calorie Intake and Nutritional Adequacy
+
+Household food quantity data are converted into caloric values using standard calorie-conversion factors. Item-level calorie intake is aggregated to the household level and converted into daily per-capita calorie intake by adjusting for household size and time period.
+
+Nutritional adequacy is evaluated using two benchmarks:
+
+Indian recommended intake (2400 kcal for rural households, 2100 kcal for urban households)
+
+International calorie-poverty threshold (2100 kcal)
+
+Households are classified as calorie-poor if their intake falls below these norms. The analysis then examines how calorie intake and calorie poverty vary across MPCE deciles.
+
+#### Calorie Conversion and Household-Level Aggregation
+
+```{r}
+Master_Dataset$Item_Code <- as.numeric(as.character(Master_Dataset$Item_Code))
+
+# CALORIE CONVERSION LOOKUP TABLE
+# (Item-wise calorific values + reference periods)
+# Item codes
+Item_Code <- c(
+  61, 62, 70, 101, 102, 103, 105, 106, 107, 108, 110, 114, 1, 2,
+  140, 146, 148, 158, 152, 71, 73, 74, 178, 170, 171, 172, 173, 175,
+  160, 162, 164, 163, 165, 5, 201, 200, 202, 206, 203, 208, 207, 211,
+  213, 212, 210, 215, 214, 205, 216, 220, 236, 224, 231, 237, 230,
+  228, 222, 232, 240, 241, 243, 242, 246, 245, 190, 195, 191, 192,
+  193, 194, 181, 184, 182, 183, 188, 95, 75
+)
+
+# Corresponding kcal per kg (same order, same length)
+Kcal_Per_1kg <- c(
+  390, 364, 340, 360, 360, 360, 360, 360, 364, 364, 364, 364, 340, 340,
+  343, 352, 340, 340, 340, 340, 0, 387, 0, 0, 387, 387, 383, 298,
+  61, 321, 873, 61, 717, 103, 24, 67, 17, 16, 21, 31, 25, 9, 19, 19,
+  19, 50, 31, 38, 15, 60, 48, 184, 45, 53, 26, 34, 17, 17, 636, 567,
+  252, 156, 299, 276.25, 139, 122, 150, 263, 130, 220,
+  884, 884, 884, 884, 884, 0, 0
+)
+
+stopifnot(length(Item_Code) == length(Kcal_Per_1kg))
+
+# Assign reference periods:
+# 7-day recall items (Block 6 style)
+seven_day_items <- c(
+  160,162,164,163,165,5,201,200,202,206,203,208,207,211,
+  213,212,210,215,214,205,216,220,236,224,231,237,230,
+  228,222,232,240,241,243,242,246,245,190,195,191,192,
+  193,194,181,184,182,183,188,95
+)
+
+Reference_Period_Days <- ifelse(
+  Item_Code %in% seven_day_items, 7, 30
+)
+
+# Final calorie lookup table
+calorieLookup <- data.frame(
+  Item_Code = Item_Code,
+  Kcal_Per_1kg = Kcal_Per_1kg,
+  Reference_Period_Days = Reference_Period_Days
+)
+
+# Ensure numeric
+calorieLookup$Item_Code <- as.numeric(calorieLookup$Item_Code)
+
+# Ensure Item_Code is numeric
+calorieLookup$Item_Code <- as.numeric(calorieLookup$Item_Code)
+# Join calorie conversion factors and compute DAILY calories per item
+calorie_item_daily <- Master_Dataset %>%
+  inner_join(calorieLookup, by = "Item_Code") %>%
+  mutate(
+    # Convert quantity to total calories for the reference period
+    # (Quantity × kcal per kg × 10 converts kg → 100g units)
+    Total_Item_Kcal = as.numeric(Total_Consumption_Quantity) * Kcal_Per_1kg * 10,
+    
+    # Convert to daily calories using NSSO reference period
+    Daily_Item_Kcal = Total_Item_Kcal / Reference_Period_Days
+  )
+
+hh_calorie_summary <- calorie_item_daily %>%
+  group_by(HHID, MPCE_Decile, Sector_Label, HH_Size) %>%
+  summarise(
+    # Sum daily calories across all food items in the household
+    Total_HH_Daily_Kcal = sum(Daily_Item_Kcal, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    # Convert to per-capita daily calorie intake
+    total_daily_pc_kcal = Total_HH_Daily_Kcal / HH_Size,
+    
+    # Nutritional norms
+    indian_norm = ifelse(Sector_Label == "Rural", 2400, 2100),
+    international_threshold = 2100,
+    
+    # Calorie poverty indicators
+    below_indian_norm = total_daily_pc_kcal < indian_norm,
+    below_international = total_daily_pc_kcal < international_threshold
+  )
+
+```
+
+#### Calorie Poverty by MPCE Decile
+
+```{r}
+poverty_by_decile <- hh_calorie_summary %>%
+  group_by(MPCE_Decile) %>%
+  summarise(
+    n_households = n(),
+    mean_calories = mean(total_daily_pc_kcal, na.rm = TRUE),
+    median_calories = median(total_daily_pc_kcal, na.rm = TRUE),
+    indian_poverty_rate = mean(below_indian_norm) * 100,
+    international_poverty_rate = mean(below_international) * 100,
+    .groups = "drop"
+  )
+
+```
+
+#### PANEL 1: Nutritional Adequacy and Calorie Deprivation
+
+```{r}
+panel_theme <- theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "grey30"),
+    legend.position = "bottom"
+  )
+
+# FIGURE A: DISTRIBUTION OF PER-CAPITA CALORIE INTAKE
+p1 <- ggplot(
+  hh_calorie_summary %>% 
+    filter(total_daily_pc_kcal > 500 & total_daily_pc_kcal < 5000),
+  aes(x = total_daily_pc_kcal)
+) +
+  geom_density(fill = "#74a9cf", alpha = 0.6) +
+  geom_vline(xintercept = 2100, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 2400, linetype = "solid", color = "darkgreen") +
+  labs(
+    title = "Distribution of Daily Per-Capita Calorie Intake",
+    subtitle = "Vertical lines show Indian and international calorie norms",
+    x = "Calories per person per day",
+    y = "Density"
+  ) +
+  panel_theme
+
+# FIGURE B: CALORIE POVERTY BY MPCE DECILE
+p2_data <- poverty_by_decile %>%
+  pivot_longer(
+    cols = c(indian_poverty_rate, international_poverty_rate),
+    names_to = "Norm",
+    values_to = "Rate"
+  ) %>%
+  mutate(
+    Norm = recode(
+      Norm,
+      indian_poverty_rate = "Indian Norm",
+      international_poverty_rate = "International Threshold"
+    )
+  )
+
+p2 <- ggplot(
+  p2_data,
+  aes(x = factor(MPCE_Decile), y = Rate, fill = Norm)
+) +
+  geom_col(position = "dodge") +
+  scale_y_continuous(labels = percent_format(scale = 1)) +
+  labs(
+    title = "Calorie Poverty Across MPCE Deciles",
+    subtitle = "Share of households below nutritional norms",
+    x = "MPCE Decile (1 = Poorest, 10 = Richest)",
+    y = "Households below norm (%)",
+    fill = "Calorie Norm"
+  ) +
+  panel_theme
+
+final_panel_q3 <- p1 / p2 +
+  plot_annotation(
+    title = "Calorie Intake and Nutritional Adequacy Across MPCE Deciles",
+    subtitle = "Higher household expenditure is associated with improved calorie sufficiency",
+    caption = "Notes: Daily per-capita calorie intake computed using NSSO reference periods."
+  )
+
+final_panel_q3
+
+```
+
+There is a wide range of daily per-capita calorie intake distribution among households and a big part of the population is around the levels which are near or below the recommended nutritional norms. The density curve shows that although average calorie intake is up with higher consumption expenditure, there is still a considerable number of households that remain under both the Indian recommended intake and the international calorie threshold.
+
+The calorie poverty rates for each decile show a clear negative connection between expenditure and nutritional deprivation. The situation of calorie deficiency is at its worst among the poorest decile and slowly goes down as MPCE goes up, which means that higher consumption expenditure is very much tied to improved calorie sufficiency. Although there is still calorie poverty in higher deciles, it indicates that increased expenditure does not guarantee proper nutrition for all households.
+
+In general, the findings prove that there is a very strong correlation between the amount spent and the quality of food, but at the same time, they show that calorie sufficiency is influenced not only by how much one can buy but perhaps also by the kinds of food one chooses, the availability of food, and the place where the food is acquired.
+
+### Part B: Calorie Sourcing Strategies Across MPCE Deciles
+
+After establishing total calorie intake, household calories are decomposed by source of acquisition:
+
+-   Market purchases
+
+-   Public Distribution System (PDS)
+
+-   Home production
+
+-   Gifts and other transfers
+
+    For each household, the proportion of total calories obtained from each source is computed. These shares are then averaged within MPCE deciles to examine how food-acquisition strategies shift with economic status.
+
+#### Calorie Source Decomposition
+
+```{r}
+# Analyze calorie sourcing patterns
+calorie_source_daily <- calorie_item_daily %>%
+  mutate(
+    Source_Channel = case_when(
+      Source == 1 ~ "Market Purchase",
+      Source == 2 ~ "Home Production",
+      Source == 7 ~ "PDS Support",
+      TRUE ~ "Other Transfers"
+    )
+  )
+
+# HOUSEHOLD-LEVEL DAILY CALORIES BY SOURCE
+hh_source_calories <- calorie_source_daily %>%
+  group_by(HHID, Source_Channel) %>%
+  summarise(
+    Source_Daily_Kcal = sum(Daily_Item_Kcal, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+hh_calorie_unique <- hh_calorie_summary %>%
+  select(HHID, MPCE_Decile, total_daily_pc_kcal) %>%
+  distinct(HHID, .keep_all = TRUE)
+
+# COMPUTE SOURCE SHARES (PER HOUSEHOLD)
+hh_source_shares <- hh_source_calories %>%
+  inner_join(hh_calorie_unique, by = "HHID") %>%
+  mutate(
+    # Share of total daily per-capita calories from each source
+    source_share = Source_Daily_Kcal / total_daily_pc_kcal
+  ) %>%
+  filter(!is.na(source_share) & total_daily_pc_kcal > 0)
+
+# AGGREGATE SOURCE SHARES BY MPCE DECILE
+sourcing_analysis <- hh_source_shares %>%
+  group_by(MPCE_Decile, Source_Channel) %>%
+  summarise(
+    avg_share = mean(source_share, na.rm = TRUE),
+    .groups = "drop"
+  )
+sourcing_analysis %>%
+  group_by(MPCE_Decile) %>%
+  summarise(total_share = sum(avg_share))
+```
+
+#### Composition of Household Calorie Sources Across MPCE Deciles
+
+```{r}
+panel_theme <- theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "grey30"),
+    strip.text = element_text(face = "bold"),
+    legend.position = "none"
+  )
+
+panel_sourcing <- ggplot(
+  sourcing_analysis,
+  aes(
+    x = factor(MPCE_Decile),
+    y = avg_share,
+    fill = Source_Channel
+  )
+) +
+  geom_col(width = 0.7, color = "grey30") +
+  facet_wrap(~ Source_Channel, ncol = 2) +
+  scale_y_continuous(labels = scales::label_percent()) +
+  scale_fill_manual(values = c(
+    "Market Purchase" = "#ff7f0e",
+    "Home Production" = "#2ca02c",
+    "PDS Support" = "#1f77b4",
+    "Other Transfers" = "#d62728"
+  )) +
+  labs(
+    title = "Composition of Household Calorie Sources Across MPCE Deciles",
+    subtitle = "Average share of daily per-capita calories by source",
+    x = "MPCE Decile (1 = Poorest, 10 = Richest)",
+    y = "Share of Total Calories"
+  ) +
+  panel_theme
+
+panel_sourcing
+
+sourcing_summary_table <- sourcing_analysis %>%
+  pivot_wider(
+    names_from = Source_Channel,
+    values_from = avg_share
+  )
+
+# Create a wide summary table of calorie sourcing by MPCE decile
+sourcing_summary_table <- sourcing_analysis %>%
+  pivot_wider(
+    names_from = Source_Channel,
+    values_from = avg_share
+  )
+
+# Print the table
+print(sourcing_summary_table)
+```
+
+The proportion of various sources of calories changes systematically over the spectrum of expenditure. Home production and Public Distribution System (PDS) support contribute a relatively larger portion of calories among the lowest MPCE deciles which implies that they depend more on non-market food sources. As MPCE increases, the calories coming from these sources gradually decrease in percentage terms.
+
+On the other hand, market purchases are becoming a larger part of the calorie intake in higher deciles, which means that the purchasing power and access to diverse food markets are better. The calories from other transfers are still considered to be very small across all deciles, and they even reduce a bit with rising expenditure, which indicates that there is not much dependence on informal transfers, regardless of one’s economic status.
+
+To sum up, the findings clearly depict that a transition in the food acquisition strategies occurs as household expenditure rises—from reliance on subsidised and self-produced food among poorer households to market-based food consumption among richer households. This trend implies that improvements in expenditure levels come along not only with higher calorie intake but also with shifts in the sources through which households secure food.
+
+## QUESTION 4: IMPACT OF EDUCATION LEVELS ON HOUSEHOLD CONSUMPTION (MPCE)
+
+Does household consumption, measured through Monthly Per Capita Consumption Expenditure (MPCE), differ systematically across education levels of the household head?
+
+This question is motivated by the hypothesis that higher educational attainment enhances earning capacity, employment stability, and access to better economic opportunities, which in turn may translate into higher household consumption.
+
+#### Hypotheses
+
+**Null Hypothesis (H₀):**
+
+Mean MPCE is equal across all education levels of the household head.
+
+**Alternative Hypothesis (H₁):**
+
+Mean MPCE differs across at least one education level, indicating that educational attainment is associated with household consumption levels.
+
+#### Data Preparation
+
+```{r}
+# STEP 1: PREPARE HOUSEHOLD HEAD EDUCATION DATA
+
+edu_head_data <- LEVEL_02_Section_3 %>%
+  # Applying your HHID creation function
+  mutate(
+    HHID = paste(
+      Sector, State, NSS_Region, FOD_Sub_Region, District,
+      Stratum, Sub_stratum, Panel, Sub_sample, FSU_Serial_No,
+      Sample_SU_No, Sample_Sub_Division_No, Second_Stage_Stratum_No,
+      Sample_Household_No, sep = "_"
+    )
+  ) %>%
+  # Relation_to_Head == 1 identifies the Household Head
+  filter(as.numeric(zap_labels(Relation_to_Head)) == 1) %>%
+  mutate(
+    HH_Head_Education = factor(
+      as.numeric(zap_labels(Education_Level)),
+      levels = c(1, 2, 3, 4, 5, 6, 7, 8),
+      labels = c(
+        "Not Literate", 
+        "Literate (No School)", 
+        "Primary", 
+        "Middle", 
+        "Secondary", 
+        "Higher Secondary", 
+        "Diploma", 
+        "Graduate & Above"
+      )
+    )
+  ) %>%
+  select(HHID, HH_Head_Education) %>%
+  # Ensure one entry per household head
+  distinct(HHID, .keep_all = TRUE)
+
+# STEP 2: MERGE WITH MASTER_DATASET AND CLEAN
+# Extract MPCE from your Master_Dataset
+MPCE_HH <- Master_Dataset %>%
+  select(HHID, MPCE) %>%
+  distinct()
+
+# Perform the merge and remove households with missing values
+analysis_final <- MPCE_HH %>%
+  inner_join(edu_head_data, by = "HHID") %>%
+  filter(!is.na(HH_Head_Education), !is.na(MPCE))
+
+```
+
+## Statistical Method: One-Way ANOVA
+
+A one-way Analysis of Variance (ANOVA) is used to test whether mean MPCE differs across education groups.\
+If the ANOVA rejects the null hypothesis, Tukey’s Honest Significant Difference (HSD) test is applied to identify which education groups differ significantly.
+
+```{r}
+# STEP 3: STATISTICAL ANALYSIS (ANOVA & TUKEY)
+anova_mpce_edu <- aov(MPCE ~ HH_Head_Education, data = analysis_final)
+print(summary(anova_mpce_edu))
+print(TukeyHSD(anova_mpce_edu))
+```
+
+A significant difference between mean MPCE of the household head by education level was revealed by the **one-way ANOVA (F = 1335, p \< 0.001)**, which led to the rejection of the null hypothesis stating that all means are equal. This result indicates strong linkage between the educational level and the consumption of the household. The **Tukey HSD post-hoc** results point out that the households led by completely illiterate people have an MPCE that is significantly lower than the households led by persons with any formal education. There is no statistically significant difference between “Literate (No School)” and “Primary” education, indicating that mere literacy does not considerably elevate a person's consumption level.
+
+MPCE rises steadily and significantly with every grade of education starting from middle education. The biggest and most noticeable differences are seen in the case of diploma and graduate education, implying that there are large economic returns to higher and technical education.
+
+In conclusion, higher educational attainment of the household head is always associated with higher household consumption. The results thus indicate an obvious education-consumption gradient.
+
+#### Summary Statistics for Visualization
+
+```{r}
+edu_summary <- analysis_final %>%
+  group_by(HH_Head_Education) %>%
+  summarise(
+    Mean_MPCE = mean(MPCE, na.rm = TRUE),
+    SD_MPCE   = sd(MPCE, na.rm = TRUE),
+    N         = n(),
+    .groups   = "drop"
+  ) %>%
+  mutate(
+    SE        = SD_MPCE / sqrt(N),
+    # Using the t-distribution for more accurate 95% Confidence Intervals
+    CI_Lower  = Mean_MPCE - (qt(0.975, df = N - 1) * SE),
+    CI_Upper  = Mean_MPCE + (qt(0.975, df = N - 1) * SE)
+  )
+```
+
+#### Visualization: Education and MPCE
+
+Figure presents a two-panel visualization:
+
+**Panel A** shows the distribution of MPCE across education categories using boxplots.
+
+**Panel B** plots mean MPCE with 95% confidence intervals.
+
+```{r}
+# STEP 5: VISUALIZATION
+
+panel_box_theme <- theme_minimal(base_size = 12) +
+  theme(
+    panel.background = element_rect(fill = "grey97", color = "grey70"),
+    panel.border = element_rect(fill = NA, color = "grey60", linewidth = 0.8),
+    plot.background = element_rect(fill = "white", color = NA),
+    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 11, hjust = 0.5, color = "grey30"),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    legend.position = "none"
+  )
+edu_labels_short <- c(
+  "Not\nLit", "Lit\n(No Sch)", "Primary", "Middle",
+  "Secondary", "H.\nSecondary", "Diploma", "Graduate+"
+)
+
+# Plot A: MPCE Distribution (Boxplot)
+p1 <- ggplot(
+  analysis_final,
+  aes(x = HH_Head_Education, y = MPCE, fill = HH_Head_Education)
+) +
+  geom_boxplot(outlier.shape = 1, outlier.alpha = 0.2, alpha = 0.75) +
+  coord_cartesian(
+    ylim = c(0, quantile(analysis_final$MPCE, 0.98, na.rm = TRUE))
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  scale_x_discrete(labels = edu_labels_short) +
+  labs(
+    title = "A. Distribution of MPCE by Education Level",
+    subtitle = "Boxplots clipped at the 98th percentile to reduce influence of outliers",
+    x = "Educational Attainment of Household Head",
+    y = "Monthly Per Capita Consumption Expenditure (₹)"
+  ) +
+  panel_box_theme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot B: Mean MPCE with 95% CI
+p2 <- ggplot(
+  edu_summary,
+  aes(x = HH_Head_Education, y = Mean_MPCE, group = 1)
+) +
+  geom_line(color = "grey60", linetype = "dashed") +
+  geom_errorbar(
+    aes(ymin = CI_Lower, ymax = CI_Upper),
+    width = 0.2,
+    color = "darkblue",
+    linewidth = 0.8
+  ) +
+  geom_point(size = 3, color = "darkblue") +
+  scale_x_discrete(labels = edu_labels_short) +
+  labs(
+    title = "B. Mean MPCE Across Education Levels",
+    subtitle = "Points denote group means; bars represent 95% confidence intervals",
+    x = "Educational Attainment of Household Head",
+    y = "Mean MPCE (₹)"
+  ) +
+  panel_box_theme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Boxed title theme for entire figure
+boxed_title_theme <- theme(
+  plot.title = element_text(
+    size = 16,
+    face = "bold",
+    hjust = 0.5,
+    margin = margin(10, 10, 5, 10)
+  ),
+  plot.subtitle = element_text(
+    size = 12,
+    hjust = 0.5,
+    margin = margin(0, 10, 10, 10),
+    color = "grey30"
+  ),
+  plot.background = element_rect(
+    fill = "grey95",
+    color = "grey60",
+    linewidth = 0.8
+  )
+)
+
+# Combine into final boxed panel
+final_panel <- (p1 | p2) +
+  plot_annotation(
+    title = "Impact of Household Head’s Educational Attainment on Consumption Levels",
+    subtitle = "Evidence from household-level MPCE data using one-way ANOVA and post-hoc comparisons",
+    caption = "Notes: MPCE = Monthly Per Capita Consumption Expenditure. Education refers to household head.\nSource: Household Survey Data."
+  ) &
+  boxed_title_theme
+final_panel
+```
+
+The graph illustrates a very strong and systematic positive correlation between the educational level of the head of the household and the level of household consumption. MPCE, besides the distributional patterns and mean estimates, increases gradually with education.
+
+The boxplots display the MPCE distribution moving prominently upwards across the higher education levels. The households powered by individuals having very low or no education at all are situated at the bottom end of the consumption spectrum whereas those with secondary, diploma, and graduate education are showing more and more higher median with upper range being more and more open. This not only indicates the higher average consumption but also the educated households having the greater access to the high-consumption opportunities.
+
+The mean MPCE plot together with the confidence intervals of 95% validates an unchanging education gradient. Mean consumption rises only a bit from literacy to primary education, but from secondary education onwards it moves very fast. The biggest increases occur at the diploma and graduate levels, thus confirming that there are very large economic returns to higher and technical education. The considerable lack of overlap of confidence intervals among higher education categories implies that the differences are statistically significant.
+
+All in all, the figure gives very strong visual proof that education is a major structural determinant of household consumption, probably affecting through the areas of improved earnings potential, occupational mobility, and economic security. The scenario is in line with the cumulative advantages that are associated with high levels of educational attainment rather than gains from basic literacy only.
+
+## QUESTION 5: ANALYSIS OF HOUSEHOLD ASSET OWNERSHIP BY SOCIAL GROUP
+
+How does household asset ownership vary across social groups, and do social group positions shape access to essential (subsistence-oriented) versus non-essential (discretionary) household assets?
+
+This analysis examines whether caste-based social stratification is associated with systematic inequalities in access to basic household resources as well as higher-order consumption goods.
+
+#### Conceptual Framework: Asset Classification
+
+Household assets are classified into **essential** and **non-essential** categories based on their contribution to basic functioning, wellbeing, and capabilities.
+
+-   **Essential assets** include items that support daily subsistence, health, mobility, food storage, and access to information. Their absence is likely to impose a significant constraint on household welfare.
+
+-   **Non-essential assets** include discretionary or comfort-enhancing goods that reflect surplus resources and higher living standards rather than basic needs.
+
+This distinction allows us to assess whether social disadvantage affects not only wealth accumulation but also access to minimum living conditions.
+
+#### Data Preparation and Asset Classification
+
+```{r}
+essential_assets <- c(
+  "050","047","580","582","583",
+  "586","587","588","590",
+  "600","601","603",
+  "560",
+  "550","551","552",
+  "570","571","572","573"
+)
+nonessential_assets <- c(
+  "602","604",
+  "043","044","045","046","581",
+  "048","585","584",
+  "553","555","556","557",
+  "561","562","563","564",
+  "640","641","642","643"
+)
+```
+
+#### Household-Level Asset Ownership Indicators
+
+Ownership is defined at the household level as possession of at least one asset in the relevant category.
+
+```{r}
+# STEP 2: HOUSEHOLD-LEVEL OWNERSHIP INDICATORS
+# Ownership is defined as presence of at least one
+# asset in the relevant category
+
+Asset_HH <- Master_Dataset %>%
+  mutate(
+    Item_Code = as.character(Item_Code),
+    Essential = ifelse(Item_Code %in% essential_assets, 1, 0),
+    NonEssential = ifelse(Item_Code %in% nonessential_assets, 1, 0)
+  ) %>%
+  group_by(HHID, Social_Group) %>%
+  summarise(
+    Essential = max(Essential, na.rm = TRUE),
+    NonEssential = max(NonEssential, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+#### Social Group–Level Ownership Shares
+
+```{r}
+# STEP 3: SOCIAL-GROUP LEVEL COUNTS
+Asset_Counts <- Asset_HH %>%
+  group_by(Social_Group) %>%
+  summarise(
+    Total_Households = n(),
+    Essential_Count = sum(Essential, na.rm = TRUE),
+    NonEssential_Count = sum(NonEssential, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# STEP 4: COMPUTE OWNERSHIP SHARES
+Asset_Summary <- Asset_Counts %>%
+  mutate(
+    Essential_Share = Essential_Count / Total_Households,
+    NonEssential_Share = NonEssential_Count / Total_Households
+  )
+```
+
+#### Visualization: Asset Ownership by Social Group
+
+```{r}
+# STEP 5: LONG FORMAT FOR PLOTTING
+asset_long <- Asset_Summary %>%
+  select(Social_Group, Essential_Share, NonEssential_Share) %>%
+  pivot_longer(
+    cols = c(Essential_Share, NonEssential_Share),
+    names_to = "Asset_Type",
+    values_to = "Share"
+  ) %>%
+  mutate(
+    Asset_Type = recode(
+      Asset_Type,
+      "Essential_Share" = "Essential Assets",
+      "NonEssential_Share" = "Non-Essential Assets"
+    )
+  )
+asset_long <- asset_long %>%
+  mutate(
+    Social_Group = factor(
+      Social_Group,
+      levels = c(1, 2, 3, 9, 0),
+      labels = c(
+        "Scheduled Tribe (ST)",
+        "Scheduled Caste (SC)",
+        "Other Backward Class (OBC)",
+        "Others",
+        "Not Reported"
+      )
+    )
+  )
+
+# STEP 6: MULTI-PANEL BAR CHART (0–100% SCALE)
+
+ggplot(asset_long,
+       aes(x = factor(Social_Group),
+           y = Share,
+           fill = Asset_Type)) +
+  
+  geom_bar(
+    stat = "identity",
+    position = position_dodge(width = 0.7),
+    width = 0.6
+  ) +
+  
+  scale_y_continuous(
+    limits = c(0, 1),
+    breaks = seq(0, 1, 0.2),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  
+  scale_fill_brewer(
+    palette = "Set2",
+    name = "Asset Category",
+    labels = c("Essential household assets",
+               "Non-essential household assets")
+  ) +
+  
+  labs(
+    title = "Social Group Differences in Household Asset Ownership",
+    subtitle = "Comparison of essential and non-essential assets across caste groups\nNSSO Household Consumption Expenditure Survey (HCES), 2023–24",
+    x = "Social Group (Caste Category)",
+    y = "Share of households owning asset (%)"
+  ) +
+  
+  theme_minimal(base_size = 12) +
+  
+  theme(
+    # TITLE & SUBTITLE
+    plot.title = element_text(
+      size = 16,
+      face = "bold",
+      hjust = 0
+    ),
+    plot.subtitle = element_text(
+      size = 11,
+      margin = margin(b = 10)
+    ),
+    
+    # AXES
+    axis.title.x = element_text(
+      size = 12,
+      face = "bold",
+      margin = margin(t = 10)
+    ),
+    axis.title.y = element_text(
+      size = 12,
+      face = "bold",
+      margin = margin(r = 10)
+    ),
+    axis.text.x = element_text(size = 11),
+    axis.text.y = element_text(size = 10),
+    
+    # LEGEND
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(size = 10),
+    
+    # PANEL BORDER (BOX AROUND GRAPH)
+    panel.border = element_rect(
+      color = "grey40",
+      fill = NA,
+      linewidth = 0.8
+    ),
+    
+    # GRIDLINES
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    
+    # SPACING
+    plot.margin = margin(15, 15, 15, 15)
+  )
+```
+
+The figure presents a clear picture of the social-group differences in household asset ownership with the gaps becoming larger and larger, especially, the case when moving from essential to non-essential assets. The possession of essential household assets is nearly universal in all social groups, which is a sign of wide access to the very items required for basic subsistence. Yet, Scheduled Tribe (ST) and Scheduled Caste (SC) households are always a bit behind OBC and “Other” groups, ownership-wise. This may indicate that even the basic household infrastructure has some residual gaps in access for the above-mentioned groups.
+
+In contrast, the ownership of non-essential assets reveals a much more pronounced social gradient. The ST and SC families have hardly any non-essential items, the OBC families are in the middle and the socially privileged groups (“Others”) have the highest rates ownership. This trend suggests that the disadvantages based on caste not only limit the accumulation of wealth but also the access to assets that are considered as choice and comfort, with the higher living standards being reflected in the latter aspect.
+
+In summary, the figure hints at unequal treatment of different layers: while the basic asset ownership is somewhat widespread, the socially marginalized groups get systematically cut from non-essential assets. This means that the social stratification of India is still strong enough to control a household's ability to go beyond mere subsistence and enjoy a better quality of life and economic security.
+
+### Statistical Hypotheses and Test
+
+-   **Null Hypothesis (H₀):** Asset ownership (essential or non-essential) is independent of social group.
+
+-   **Alternative Hypothesis (H₁):** Asset ownership differs systematically across social groups.
+
+To test these hypotheses, **Chi-square tests of independence** are applied separately for essential and non-essential assets.
+
+```{r}
+# STEP 7: CHI-SQUARE TEST OF ASSOCIATION
+chi_table <- Asset_HH %>%
+  pivot_longer(
+    cols = c(Essential, NonEssential),
+    names_to = "Asset_Type",
+    values_to = "Owned"
+  ) %>%
+  mutate(Owned = factor(Owned, levels = c(0, 1))) %>%
+  count(Social_Group, Asset_Type, Owned)
+# Convert to contingency table
+chi_matrix <- xtabs(n ~ Social_Group + Asset_Type + Owned, data = chi_table)
+# Perform Chi-square tests separately
+chi_essential <- chisq.test(chi_matrix[, "Essential", ])
+chi_nonessential <- chisq.test(chi_matrix[, "NonEssential", ])
+
+print(chi_essential)
+print(chi_nonessential)
+```
+
+The results of the chi-square tests show that the null hypothesis of independence between social group and asset ownership is rejected for both asset categories. In the case of essential assets, the relationship with social group is extremely strong (χ² = 250.89, p \< 0.001), which means that access to basic household assets differs significantly from one caste group to another.
+
+The relationship for non-essential assets is also significant (χ² = 71.41, p \< 0.001), however, it is weaker and that means social group status still determines access to modern household assets in a less intensive way.
+
+To sum up, the findings declare that the social hierarchy is invariably correlated with the distribution of assets, not only in terms of the lower layer of consumption but also in terms of the upper layer of household resources.
+
+# Conclusion
+
+Using unit-level data from the 2023–24 NSSO HCES, this report presents a valuable holistic assessment of household welfare in the country, moving from the single-dimensional measures to study the intertwined factors of consumption, nutrition, education, location, and social identity. Throughout all the five analytical exercises, one and the same pattern shows up: inequality operates through many interlinked channels rather than just the levels of spending.
+
+Expenditure-based analyses show that the inequality is caused not only by differences in total spending but also sharp shifts in composition, especially the growth of non-food consumption at the highest expenditure levels. The rural-urban comparison reveals that spatial inequality still mirrors the differences in levels rather than the differing consumption patterns, which means location keeps imposing systematic restrictions on economic opportunities. Nutritional analysis supports this conclusion by showing that higher expenditure may, on average, lead to sufficient calorie intake but still does not fully eradicated such a state of inadequacy, which then highlights the drawbacks of income-centric welfare assessments.
+
+The analysis of education indicates that human capital was the principal mechanism by which households were able to turn their economic capacity into consumption gains that were sustained over the long term. The strong gradient of education and consumption says that the more educated a person is, the better the access to stable and well-paid jobs, thus, the reinforcing of long-term welfare advantages.
+
+The analysis of asset ownership broadens these insights by showing how the positioning of social groups affects the accessibility of both the necessary and luxurious household assets. The social groups' differences in ownership of assets indicate that there are still some structural inequalities which persist even beyond the present levels of consumption. To have access to the necessary assets is a sign of capability deprivation while differences in owning non-essential assets show long-term accumulation and resilience. All of these patterns together point to the fact that social identity still plays a role in determining household welfare by creating durable constraints on asset accumulation rather than merely through short-term consumption outcomes.
+
+When the different aspects of the finding are put together, it becomes very clear that India's inequality is multifaceted, it lies in the area of economic power, social structure, and access to resources that can either be productive or protective. Any policies designed to reduce inequality must, therefore, not only target the area of income enhancement alone but also the deeper structural factors that are—the education, social inclusion, and nutrition security, and access to assets—that determine the ability of the households to turn resources into sustained wellbeing. The NSSO HCES is still an important instrument for revealing these layered aspects of inequality and helping in the formulation of social and economic policies that are based on evidence.
