@@ -1,38 +1,80 @@
-# NSSO Household Consumption & Nutritional Inequality Analysis (India 2023–24)
+📊 NSSO HCES 2023–24: Household Welfare & Consumption Inequality in India
 
-## Project Overview
+🔍 Overview
+Household consumption expenditure is one of the most reliable indicators of economic well-being in India, where income data is often incomplete or underreported. This project uses unit-level microdata from the NSSO's 2023–24 Household Consumer Expenditure Survey (HCES) to examine five interconnected dimensions of household welfare:
 
-This project analyzes household-level consumption data from the National Sample Survey Office (NSSO) Household Consumption Expenditure Survey (HCES) 2023–24 to examine patterns of economic welfare, consumption inequality, and nutritional adequacy in India.
+How unequal is consumption across the expenditure distribution?
+How large is the rural–urban divide, and is it consistent across income groups?
+Are Indian households calorically adequate, and how does this vary with spending?
+Does the household head's education level predict consumption outcomes?
+Does caste-based social group membership shape access to household assets?
 
-Using R and statistical analysis techniques, the study investigates how household expenditure, calorie intake, education, and demographic characteristics influence living standards across rural and urban India.
+The analysis covers over 3.47 crore household observations across all states and union territories of India, combining food expenditure, non-food expenditure, nutritional conversion, and socio-demographic data from multiple NSSO survey levels.
 
-The project combines expenditure-based and nutrition-based welfare indicators to provide evidence on inequality, consumption behavior, and food security.
+❓ Research Questions
+#QuestionMethod1How is Monthly Per Capita Consumption Expenditure (MPCE) distributed, and how do food vs. non-food spending patterns differ across deciles?Decile analysis, histogram, boxplots2Is there a statistically significant rural–urban gap in MPCE, and does it persist across the expenditure distribution?Welch two-sample t-test, decile curves3What share of households falls below calorie norms, and how do food-sourcing strategies shift with expenditure?Calorie conversion, poverty thresholds, source decomposition4Does household head's education level significantly predict household consumption (MPCE)?One-way ANOVA, Tukey HSD post-hoc test5Do social groups (ST, SC, OBC, Others) differ in ownership of essential vs. non-essential household assets?Chi-square test of independence
 
+🔑 Key Findings
+Q1 — Consumption Inequality
+
+Mean MPCE rises from ₹9,427 (bottom decile) to ₹84,412 (top decile) — a ~9x disparity
+MPCE distribution is heavily right-skewed; top-decile mean far exceeds median, indicating extreme upper-tail concentration
+Non-food MPCE grows far faster than food MPCE across deciles — consistent with Engel's Law
+By the top deciles, non-food expenditure dominates total consumption, reflecting discretionary spending
+
+Q2 — Rural–Urban Divide
+
+Mean MPCE: ₹23,186 (Rural) vs. ₹37,431 (Urban) — a monthly gap of ~₹14,250
+Gap is statistically significant (t = −1333, p < 0.001)
+Decile curves are nearly parallel, indicating the gap is a level difference, not a structural divergence
+
+Q3 — Nutritional Adequacy
+
+A significant share of the population falls below both the Indian norm (2400/2100 kcal) and the international threshold (2100 kcal)
+Calorie poverty rates decline sharply with rising MPCE, but persist even in middle deciles
+Poorer households rely more on PDS and home production; richer households shift toward market purchases
+
+Q4 — Education & Consumption
+
+ANOVA: F = 1335, p < 0.001 — education level is strongly associated with MPCE
+Mean MPCE for graduate-led households is ₹21,481 higher than illiterate-led households
+No significant difference between "Literate (no school)" and "Primary" — basic literacy alone provides limited returns
+Large returns emerge from secondary education onward; diploma and graduate levels yield the highest gains
+
+Q5 — Social Group & Asset Ownership
+
+Essential asset ownership is near-universal, but ST and SC households lag even at this baseline
+Non-essential asset ownership shows a sharp social gradient: ST/SC < OBC < Others
+Chi-square results: Essential (χ² = 250.89, p < 0.001), Non-Essential (χ² = 71.41, p < 0.001)
+Caste-based stratification shapes not just wealth, but access to comfort and economic resilience
 ---
 
-## Research Questions
+## 📁 Repository Structure
 
-This study addresses the following questions:
+```text
+nsso-consumption-expenditure-analysis/
+│
+├── README.md
+│   └── Project documentation, methodology, findings, and usage guide
+│
+├── quarto/
+│   └── NSSO_Analysis.qmd
+│       └── Complete Quarto workflow containing data preparation,
+│           statistical analysis, visualisations, and report generation
+│
+├── report/
+│   └── NSSO_R_EPORT_FINAL.pdf
+│       └── Final project report with methodology, code,
+│           outputs, statistical tests, and interpretation
+│
+└── outputs/
+    ├── mpce_dashboard.png
+    ├── rural_urban_gap.png
+    ├── calorie_poverty.png
+    └── calorie_sources.png
+        └── Key visualisations generated from the analysis
+```
 
-### 1. Consumption Distribution
-- How is Monthly Per Capita Consumption Expenditure (MPCE) distributed across households?
-- How do food and non-food expenditures vary across expenditure deciles?
-
-### 2. Rural–Urban Welfare Gap
-- Do rural and urban households differ significantly in their average MPCE?
-- Does the expenditure gap remain consistent across the distribution?
-
-### 3. Nutritional Adequacy
-- How does calorie intake vary across MPCE deciles?
-- What proportion of households fall below calorie poverty thresholds?
-
-### 4. Education and Consumption
-- Is higher educational attainment associated with higher household consumption?
-
-### 5. Social Group and Asset Ownership
-- How does ownership of essential and non-essential assets differ across social groups?
-
----
 
 ## Dataset
 
@@ -103,53 +145,6 @@ The project combines multiple NSSO survey levels containing:
 
 ---
 
-## Key Findings
-
-### Consumption Inequality
-
-- MPCE rises sharply across expenditure deciles.
-- Consumption inequality is driven largely by upper-tail expenditure concentration.
-- Non-food expenditure grows substantially faster than food expenditure in higher deciles.
-
-### Rural–Urban Gap
-
-- Urban households exhibit significantly higher MPCE than rural households.
-- The rural–urban expenditure gap remains relatively stable across deciles.
-
-### Nutrition and Calorie Poverty
-
-- Calorie poverty declines as household expenditure increases.
-- Higher MPCE is strongly associated with improved nutritional adequacy.
-- Poorer households rely more heavily on subsidized and self-produced food sources.
-
-### Education and Welfare
-
-- Higher educational attainment is associated with significantly higher household consumption levels.
-- Education emerges as an important determinant of household welfare.
-
----
-
-## Project Structure
-
-```text
-nsso-consumption-expenditure-analysis/
-
-├── README.md
-├── report/
-│   └── NSSO_R_EPORT_FINAL.pdf
-│
-├── code/
-│   └── analysis.R
-│
-├── outputs/
-│   ├── mpce_dashboard.png
-│   ├── rural_urban_gap.png
-│   ├── calorie_poverty.png
-│   └── calorie_sources.png
-```
-
----
-
 ## Visual Outputs
 
 The project includes:
@@ -182,6 +177,7 @@ BS in Analytics and Sustainability Studies
 
 ---
 
-## Disclaimer
+📜 License
+This project is licensed under the MIT License. The underlying NSSO data is the property of the Government of India / MoSPI and is subject to their own terms of use.
 
 The NSSO unit-level data used in this project may be subject to access and usage restrictions. This repository is intended for educational, research, and portfolio purposes.
